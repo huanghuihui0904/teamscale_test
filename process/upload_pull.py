@@ -16,7 +16,7 @@ API_TOKEN = os.getenv("API_TOKEN")
 PROJECT_ID = os.getenv("PROJECT_ID")
 
 # Root directory containing subdirectories
-root_base_dir = "/raid/data/hhhuang/teamscale/teamscale_testing_files/repos4/java_time_split"
+root_base_dir = "/raid/data/hhhuang/teamscale/teamscale_testing_files/repos5/java_time_split"
 
 # Directory for storing results
 results_dir = "/raid/data/hhhuang/teamscale/teamscale_testing_files/teamscale_results"
@@ -169,51 +169,70 @@ def process_subdirectories():
             logging.warning(f"No files found in {subdir_path}. Skipping...")
             continue
 
-        # Submit and fetch findings
-        findings = submit_and_fetch_findings_with_retries(all_files, commit_id)
+        # Split `all_files` into chunks of 20 files
+        batch_size = 20
+        file_batches = [all_files[i:i + batch_size] for i in range(0, len(all_files), batch_size)]
+        logging.info(f"Splitting {len(all_files)} files into {len(file_batches)} batches of size {batch_size}.")
 
-        if findings:
-            added_findings, findings_in_changed_code, removed_findings = findings
-            red_findings = []
-            all_findings = []
+        all_added_findings = []
+        all_red_findings = []
 
-            # Process findings
-            for finding in added_findings:
-                # Extract common attributes for all findings
-                start_line = getattr(finding, "startLine", None)
-                end_line = getattr(finding, "endLine", None)
-                file_path = getattr(finding, "uniformPath", None)
-                assessment = getattr(finding, "assessment", None)
-                file_path="/"+file_path
+        for batch_index, batch in enumerate(file_batches):
+            logging.info(f"Submitting batch {batch_index + 1}/{len(file_batches)} with {len(batch)} files for commit {commit_id}.")
 
-                # Extract content for the finding
-                file_content = None
-                if file_path and start_line and end_line:
-                    file_content = extract_lines(file_path, start_line, end_line)
+            # Submit and fetch findings for the current batch
+            findings = submit_and_fetch_findings_with_retries(batch, commit_id)
 
-                # Prepare the finding data
-                finding_data = {
-                    "finding_id": getattr(finding, "finding_id", None),
-                    "assessment": assessment,
-                    "message": getattr(finding, "message", None),
-                    "file_path": file_path,
-                    "start_line": start_line,
-                    "end_line": end_line,
-                    "extracted_content": file_content,
-                }
+            if findings:
+                added_findings, findings_in_changed_code, removed_findings = findings
+                red_findings = []
 
-                # Append to the all_findings list
-                all_findings.append(finding_data)
+                # Process findings in the current batch
+                for finding in added_findings:
+                    # Extract common attributes for all findings
+                    start_line = getattr(finding, "startLine", None)
+                    end_line = getattr(finding, "endLine", None)
+                    file_path = getattr(finding, "uniformPath", None)
+                    assessment = getattr(finding, "assessment", None)
 
-                # Append to the red_findings list if assessment is RED
-                if assessment == "RED":
-                    red_findings.append(finding_data)
+                    # Ensure file path starts with "/"
+                    if file_path:
+                        file_path = f"/{file_path}"
 
-            # Store both RED findings and all findings
-            store_red_findings(commit_id, red_findings)
-            store_all_findings(commit_id, all_findings)
-        else:
-            logging.error(f"Failed to process {subdir_path}")
+                    # Extract content for the finding
+                    file_content = None
+                    if file_path and start_line and end_line:
+                        file_content = extract_lines(file_path, start_line, end_line)
+
+                    # Prepare the finding data
+                    finding_data = {
+                        "finding_id": getattr(finding, "finding_id", None),
+                        "assessment": assessment,
+                        "message": getattr(finding, "message", None),
+                        "file_path": file_path,
+                        "start_line": start_line,
+                        "end_line": end_line,
+                        "extracted_content": file_content,
+                    }
+
+                    # Append to the batch's red_findings list if assessment is RED
+                    if assessment == "RED":
+                        red_findings.append(finding_data)
+
+                    # Append to the global all_added_findings list
+                    all_added_findings.append(finding_data)
+
+                # Append current batch's red findings to the global red findings list
+                all_red_findings.extend(red_findings)
+            else:
+                logging.error(f"Failed to process batch {batch_index + 1}/{len(file_batches)} for commit {commit_id}.")
+
+        # Store all RED findings and all findings for the current commit
+        store_red_findings(commit_id, all_red_findings)
+        store_all_findings(commit_id, all_added_findings)
+
+        if not all_added_findings:
+            logging.error(f"Failed to retrieve any findings for commit {commit_id}.")
             failed_entry = {
                 "directory": subdir_path,
                 "commit_id": commit_id,

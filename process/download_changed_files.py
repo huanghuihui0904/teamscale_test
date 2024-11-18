@@ -11,7 +11,7 @@ load_dotenv()
 
 # Directory containing JSON files
 json_dir = "/raid/data/hhhuang/teamscale/teamscale_testing_files/separated_data/java_time_split"
-output_dir = "/raid/data/hhhuang/teamscale/teamscale_testing_files/repos4/java_time_split"
+output_dir = "/raid/data/hhhuang/teamscale/teamscale_testing_files/repos5/java_time_split"
 
 # Load GitHub token from environment
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -42,7 +42,7 @@ def fetch_changed_files_and_parent(repo, commit_hash):
         logging.error(f"Failed to fetch commit details for {commit_hash}: {response.status_code} - {response.text}")
         return None, None
 
-def download_previous_file(repo, parent_commit, file_path):
+def download_previous_file(repo, parent_commit,cur_commit,file_path):
     """Download the previous version of a specific file from the parent commit."""
     file_url = f"https://api.github.com/repos/{repo}/contents/{file_path}?ref={parent_commit}"
     try:
@@ -55,7 +55,7 @@ def download_previous_file(repo, parent_commit, file_path):
                 decoded_content = base64.b64decode(file_data['content']).decode('utf-8')
 
                 # Define the output file path
-                output_file_path = os.path.join(output_dir, f"{repo.replace('/', '@')}#{parent_commit}", file_path)
+                output_file_path = os.path.join(output_dir, f"{repo.replace('/', '@')}#{cur_commit}", file_path)
                 os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
                 # Write decoded content to the file
@@ -114,7 +114,7 @@ for filename in os.listdir(json_dir):
                     # Download only the previous version of .java files
                     for file_info in changed_files:
                         if file_info['filename'].endswith('.java'):
-                            download_previous_file(full_repo_name, parent_commit, file_info['filename'])
+                            download_previous_file(full_repo_name, parent_commit, commit_hash,file_info['filename'])
 
                     logging.info(f"All previous .java files from parent commit {parent_commit} downloaded successfully.")
                 else:
