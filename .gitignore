@@ -1,0 +1,12 @@
+*.json
+*.log
+process/test3.py
+process/test4.py
+process/upload_pull2.py
+pull_findings.py
+submit_commit.py
+submit_commit3.py
+submit_commit2.py
+test2.py
+
+test.py
