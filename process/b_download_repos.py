@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Directory containing JSON files
-json_dir = "/raid/data/hhhuang/teamscale_testing/separated_data/java_time_split"
-output_dir = "/raid/data/hhhuang/teamscale_testing/repos/java_time_split"
+json_dir = "/raid/data/hhhuang/teamscale/teamscale_testing_files/separated_data/java_time_split"
+output_dir = "/raid/data/hhhuang/teamscale/teamscale_testing_files/repos3/java_time_split"
 
 # Load GitHub token from environment
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -24,12 +24,12 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',  # Log format
 )
 
-def download_version_repo(repo, commit_hash):
+def download_version_repo(repo, parent_commit_sha):
+    """Download the version of the repo associated with the given commit hash."""
     # GitHub API endpoint to get repository tags
     tags_url = f"https://api.github.com/repos/{repo}/tags"
     response = requests.get(tags_url, headers=headers)
 
-    # Raise an exception if the tags couldn't be fetched
     if response.status_code != 200:
         logging.error(f"Failed to fetch tags: {response.status_code} - {response.text}")
         raise Exception(f"Failed to fetch tags: {response.status_code} - {response.text}")
@@ -53,9 +53,8 @@ def download_version_repo(repo, commit_hash):
                 logging.info(f"Downloaded zipball for tag {tag_name} as {zip_filename}")
                 
                 # Define the extraction directory
-                extract_dir = os.path.join(output_dir, f"{repo.replace('/', '@')}#{commit_hash}#{tag_name}")
+                extract_dir = os.path.join(output_dir, f"{repo.replace('/', '@')}#{parent_commit_sha}#{tag_name}")
                 
-                # Skip extraction if directory already exists
                 if os.path.exists(extract_dir):
                     logging.info(f"Directory {extract_dir} already exists, skipping extraction.")
                     os.remove(zip_filename)
@@ -87,31 +86,32 @@ for filename in os.listdir(json_dir):
                 logging.warning(f"File {filename} is empty or not in the expected format.")
                 continue
             
-            # Read the first entry and extract the "commit_URL" property
+            # Read the first entry and extract "commit_URL" and "parent_commit_sha"
             first_entry = data[0] if isinstance(data, list) else data
             commit_url = first_entry.get("commit_URL")
-            if not commit_url:
-                logging.warning(f"No 'commit_URL' found in the first entry of {filename}.")
+            parent_commit_sha = first_entry.get("parent_commit_sha")
+            
+            if not commit_url or not parent_commit_sha:
+                logging.warning(f"Missing 'commit_URL' or 'parent_commit_sha' in {filename}.")
                 continue
 
-            # Parse the commit URL to extract owner, repo, and commit hash
+            # Parse the commit URL to extract owner and repo
             parsed_url = urlparse(commit_url)
             path_parts = parsed_url.path.strip("/").split("/")
-            if len(path_parts) < 4:
+            if len(path_parts) < 2:
                 logging.error(f"Invalid commit URL format in {filename}: {commit_url}")
                 continue
             
             owner = path_parts[0]
             repo = path_parts[1]
-            commit_hash = path_parts[3]
             full_repo_name = f"{owner}/{repo}"
 
-            # Download the repository version associated with the commit
-            logging.info(f"Processing commit {commit_hash} in repository {full_repo_name} from {filename}")
-            version = download_version_repo(full_repo_name, commit_hash)
+            # Download the repository version associated with the parent commit
+            logging.info(f"Processing parent commit {parent_commit_sha} in repository {full_repo_name} from {filename}")
+            version = download_version_repo(full_repo_name, parent_commit_sha)
 
             # Log the result
             if version:
-                logging.info(f"Repository for commit {commit_hash} downloaded and extracted successfully.")
+                logging.info(f"Repository for parent commit {parent_commit_sha} downloaded and extracted successfully.")
             else:
-                logging.info(f"No version tag found for commit {commit_hash} or its ancestors.")
+                logging.info(f"No version tag found for parent commit {parent_commit_sha} or its ancestors.")
