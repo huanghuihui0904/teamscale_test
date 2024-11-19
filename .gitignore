@@ -10,3 +10,5 @@ submit_commit2.py
 test2.py
 
 test.py
+process/calculate_result_useless.py
+process/compare_result.py
