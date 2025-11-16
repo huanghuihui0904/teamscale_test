@@ -36,12 +36,12 @@ jobs:
           # --- 图片中包含的额外参数 ---
           timeout_seconds: 300
           block_percentage: 70
-      - name: Upload Security Report Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          # name: 是您希望在 GitHub 界面上看到的产物名称
-          # (这对应您上一张图片中的 "security-report")
-          name: security-report
+      # - name: Upload Security Report Artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     # name: 是您希望在 GitHub 界面上看到的产物名称
+      #     # (这对应您上一张图片中的 "security-report")
+      #     name: security-report
           
-          # path: 是您日志中确认的、要上传的实际文件名
-          path: security_report.md
+      #     # path: 是您日志中确认的、要上传的实际文件名
+      #     path: security_report.md
