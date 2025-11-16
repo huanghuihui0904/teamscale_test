@@ -1,0 +1,38 @@
+# .github/workflows/titan-ci.yml
+
+name: Titan CI Scan
+
+# 定义工作流的触发条件
+# 这里设置为在 main 分支有 push 或 pull_request 时触发
+on:
+  push:
+    branches: [ "main" ] # 您可以修改为您项目的主分支
+  pull_request:
+    branches: [ "main" ] # 您可以修改为您项目的主分支
+
+jobs:
+  titan-scan:
+    runs-on: ubuntu-latest # 使用最新的 Ubuntu 运行环境
+    steps:
+      # 步骤1：检出您的代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 步骤2：运行 TITAN Security Scan (根据您的图片更新)
+      - name: Run TITAN Security Scan
+        # 使用图片中指定的版本 v1.0.0
+        uses: titanfyp/titan-ci-tool@v1.0.0 
+        with:
+          # --- 必需的 Secrets ---
+          # 将 secrets.TITAN_API_BASE_URL 传递给 action 的 api_base_url 输入
+          api_base_url: ${{ secrets.TITAN_API_BASE_URL }}
+          # 将 secrets.GITHUB_TOKEN 传递给 action 的 github_token 输入
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # --- 您指定的输入参数 ---
+          report_format: 'md'
+          blocking: false
+          
+          # --- 图片中包含的额外参数 ---
+          timeout_seconds: 300
+          block_percentage: 70
