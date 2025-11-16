@@ -26,7 +26,7 @@ jobs:
           report_format: 'pdf'
           timeout_seconds: 300
           blocking: true
-          block_percentage: 10
+          block_percentage: 0
       
       - name: Security scan summary
         if: failure()
