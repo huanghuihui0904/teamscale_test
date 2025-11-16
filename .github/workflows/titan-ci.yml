@@ -1,6 +1,6 @@
 # .github/workflows/titan-ci.yml
 
-name: Titan CI Scan
+name: Run TITAN Security Scan
 
 # 定义工作流的触发条件
 # 这里设置为在 main 分支有 push 或 pull_request 时触发
