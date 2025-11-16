@@ -36,3 +36,15 @@ jobs:
           # --- 图片中包含的额外参数 ---
           timeout_seconds: 300
           block_percentage: 70
+      - name: Upload Security Report Artifact
+        # 使用 GitHub 官方的 "upload-artifact" Action
+        uses: actions/upload-artifact@v4
+        with:
+          # 'name:' 是您希望在 GitHub 界面上看到的产物名称
+          # 这必须与图片中的 "security-report" 完全一致
+          name: security-report
+          
+          # 'path:' 是 titan-ci-tool 生成的报告文件的实际路径
+          # 这是一个常见的猜测，因为您的 report_format 是 'md'
+          # 它可能在根目录生成了 report.md 或 security-report.md
+          path: report.md
